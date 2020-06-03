@@ -1,0 +1,265 @@
+/****************************************************************************
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ 
+ http://www.cocos2d-x.org
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ ****************************************************************************/
+
+#include "HelloWorldScene.h"
+#include "SimpleAudioEngine.h"
+
+USING_NS_CC;
+int _screenWitdth;
+int _screenHeight;
+Scene* HelloWorld::createScene()
+{
+    return HelloWorld::create();
+}
+
+// Print useful error message instead of segfaulting when files are not there.
+static void problemLoading(const char* filename)
+{
+    printf("Error while loading: %s\n", filename);
+    printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames in HelloWorldScene.cpp\n");
+}
+
+// on "init" you need to initialize your instance
+bool HelloWorld::init()
+{
+    //////////////////////////////
+    // 1. super init first
+    if ( !Scene::init() )
+    {
+        return false;
+    }
+    /*
+     地图的处理十分特殊,属于基础功能之一,要嵌入各模块的方法,且有现成方法,我就不打包了
+     这里提供了地图导入,读取,移动,获取属性等方面的示例
+     编译前一定要将对应资源文件(本示例对应一个TMX文件,两个PNG文件)导入resource下
+     编译过程中可能会出现特殊报错(command codesign failed with a nonzero exit code)建议将三个资源文件从resource中删除后编译,IDE会提示找不到对应地图文件,这时再重新导入就可以正常运行了
+     如果有其他问题请与我联系
+     如果需要技术支持请与我联系
+     如果底层实现有问题请与我联系
+     如果需要功能拓展请与我联系
+     */
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    _screenWitdth=visibleSize.width;
+    _screenHeight=visibleSize.height;
+    auto map =TMXTiledMap::create("map.tmx");//加载地图
+    map->setAnchorPoint(Vec2(0,0));
+    map->setPosition(0,0);//将地图左下角与显示界面左下角对齐(实际上这里存在误差,需要具体改变参数才能实现完全对齐)
+    addChild(map);//将地图添加进Scene,现在地图就可以显示了
+    
+    /*地图的构成:
+     map由多个layer组成:图块层:(摆放砖块,墙壁宝箱);对象层:(放置英雄,怪物等)
+     图块层包含许多种图块,每个图块都有对应属性(如我们判别穿墙的move属性),坐标,长宽等信息,我们可以通过(x,y)坐标或其特殊的gid值(类似编号)获取其属性
+     */
+    
+    //对象层属性获取演示
+    auto objectGroup =map->getObjectGroup("对象层 1");//从map中获取对象层
+    auto obj = objectGroup->getObject("player");//从对象层中获取目标对象
+    auto player =Sprite::create("knight.png");//创建精灵
+    player->setPosition(obj["x"].asFloat(),obj["y"].asFloat());//我们通过obj["TypeName"]的形式获取目标属性
+    //这里在获取坐标时内部调用了坐标转换函数,将object的TMX位置坐标转化为当前视角下坐标,比较复杂,有疑问请咨询我
+    player->setScale(0.45);//让英雄和一块砖一样大
+    addChild(player);
+    //可以通过.asTypeName的形式将属性变量任意转换成需要的类型
+    //log("%f %f",obj["x"].asFloat(),obj["y"].asFloat());
+    
+
+    //log("!!!!!! %f,%f\n%f,%f",visibleSize.width,visibleSize.height,map->getMapSize().width,map->getMapSize().height);
+    
+    /**
+     下面是移动及穿墙测试
+     用(siteX,siteY)记录地图左下角位置坐标,可以通过对地图setPosition实现地图随人物移动
+     */
+    static int siteX=0;
+    static int siteY=0;
+    
+    //向右移动测试,我简单使用了点击界面上的label来识别动作
+    auto *label=Label::createWithTTF("right","fonts/Marker Felt.ttf", 24);
+    addChild(label);
+    label->setPosition(visibleSize.width*3/4,visibleSize.height/2);
+    
+    auto *listener= EventListenerTouchOneByOne::create();
+    listener->onTouchBegan=[label,player,map,visibleSize](Touch *t,Event *e){
+        
+        log("(x,y)=(%f,%f)  (siteX,siteY)=(%d,%d)",player->getPosition().x,player->getPosition().y,siteX,siteY);//输出一下当前英雄位置坐标,用于测试
+        if(label->getBoundingBox().containsPoint((t->getLocation()))){
+            log("OnTouchBegan Right");
+            //log("Judge Value = %f  siteX=%f",visibleSize.width-map->getMapSize().width*16,siteX);
+            
+            auto smallWall = map->getLayer("smallWall");//获取smallWall层
+            
+            /*
+             注意:我们需要获取英雄周围的图块信息,也就是说必须将可视化界面坐标转化为TMX坐标
+             getPosition和visibSize等获取的坐标,尺寸信息,不可以直接对TMX地图使用!!!
+             必须要进行相应的坐标转换,有疑问请与我联系
+             */
+            int X=(player->getPosition().x-siteX)/15;//坐标转换
+            int Y=25-(player->getPosition().y-siteY)/15;
+            
+            /*这段代码的意义在于可以获取周围位置的一个图块,将其创建为sprite类,并改变其颜色
+              在对坐标等信息进行测试时很好用,如果你需要使用并感到疑惑请与我联系
+             */
+            /*auto sprite=smallWall->getTileAt(Vec2(X+1,Y));
+            sprite->setColor(Color3B(225,0,0));*/
+            
+            auto gidOne=smallWall->getTileGIDAt(Vec2(X+1,Y));//我门获取对应坐标(转换后)的图块gid值
+            auto propertyOne=map->getPropertiesForGID(gidOne).asValueMap();//通过gid值获取其属性
+            /*
+             我一开始打算同时获取两个图块层,但是很麻烦,因为不是所有位置都有图块,如果获取位置是空的程序将崩溃
+             我这里采用的方法是,在smallWall层上的边缘区域放置了一圈特殊图块用于做不可穿越区域识别,由于不可穿越区域存在障碍物,改特殊图块会被遮盖
+             */
+            //auto gidTwo=bigWall->getTileGIDAt(Vec2(X+1,Y));
+            //auto propertyTwo=map->getPropertiesForGID(gidTwo).asValueMap();
+            
+            
+            /*
+             获取横坐标为什么要加一呢?
+             因为我们进行的是向右移动测试,需要获取右边一格的图块,如果您需要完善其他移动方向,原理都是如此
+            */
+            
+            if(propertyOne["move"].asBool()!=false ){
+                
+              //如果两个层上获取的图块都可以移动,就执行后续移动命令
+                if(siteX>visibleSize.width-map->getMapSize().width*16){
+                    
+                    siteX-=15;
+                    map->setPosition(siteX,siteY);
+                }
+                else{
+                   auto moveBy = MoveBy::create(0.3, Vec2(15,0));
+                   player->runAction(moveBy);
+                   float x=player->getPosition().x;
+                   float y=player->getPosition().y;
+                   log("it's(%f,%f)",x,y);
+                   }
+            }
+
+            
+            
+            
+        }
+        return false;
+    };
+    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener, label);
+    
+    auto *label2=Label::createWithTTF("left","fonts/Marker Felt.ttf", 24);
+    addChild(label2);
+    label2->setPosition(visibleSize.width/4,visibleSize.height/2);
+    auto *listener2= EventListenerTouchOneByOne::create();
+    listener2->onTouchBegan=[label2,player,map,visibleSize](Touch *t,Event *e){
+        
+        if(label2->getBoundingBox().containsPoint((t->getLocation()))){
+            log("OnTouchBegan Left");
+            
+            if(player->getPosition().x<visibleSize.width/2){
+                siteX+=15;
+                map->setPosition(siteX,siteY);
+            }
+            else{
+                auto moveBy = MoveBy::create(0.3, Vec2(-15,0));
+                player->runAction(moveBy);
+                float x=player->getPosition().x;
+                float y=player->getPosition().y;
+                log("it's(%f,%f)",x,y);
+            }
+            
+            
+        }
+        return false;
+    };
+        /*
+         我们的测试示例到此结束,剩下的部分是左右上三个方向的移动,我懒得加上穿墙识别(毕竟要通过键盘控制)
+         有问题请与我联系
+         */
+    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener2, label2);
+    
+    auto *label4=Label::createWithTTF("up","fonts/Marker Felt.ttf", 24);
+    addChild(label4);
+    label4->setPosition(visibleSize.width/2,visibleSize.height*3/4);
+    auto *listener4= EventListenerTouchOneByOne::create();
+    
+    listener4->onTouchBegan=[label4,player,map,visibleSize](Touch *t,Event *e){
+        if(label4->getBoundingBox().containsPoint((t->getLocation()))){
+            log("OnTouchBegan Up");
+            if(player->getPosition().y>visibleSize.height/2){
+                siteY-=15;
+                map->setPosition(siteX,siteY);
+            }
+            else{
+                auto moveBy = MoveBy::create(0.3, Vec2(0,15));
+                player->runAction(moveBy);
+                float x=player->getPosition().x;
+                float y=player->getPosition().y;
+            }
+            
+           
+        }
+        return false;
+    };
+    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener4, label2);
+        
+    auto *label5=Label::createWithTTF("down","fonts/Marker Felt.ttf", 24);
+    addChild(label5);
+    label5->setPosition(visibleSize.width/2,visibleSize.height/4);
+    auto *listener5= EventListenerTouchOneByOne::create();
+    listener5->onTouchBegan=[label5,player,map,visibleSize](Touch *t,Event *e){
+        if(label5->getBoundingBox().containsPoint((t->getLocation()))){
+            log("OnTouchBegan Down");
+            if(player->getPosition().y<visibleSize.height/2){
+                siteY+=15;
+                map->setPosition(siteX,siteY);
+            }
+            else{
+                auto moveBy = MoveBy::create(0.3, Vec2(0,-15));
+                player->runAction(moveBy);
+                float x=player->getPosition().x;
+                float y=player->getPosition().y;
+            }
+            
+            //log("it's(%f,%f)",x,y);
+            
+        }
+        return false;
+    };
+    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener5, label5);
+    
+    
+        
+    
+    return true;
+    };
+
+
+void HelloWorld::menuCloseCallback(Ref* pSender)
+{
+    //Close the cocos2d-x game scene and quit the application
+    Director::getInstance()->end();
+
+    /*To navigate back to native iOS screen(if present) without quitting the application  ,do not use Director::getInstance()->end() as given above,instead trigger a custom event created in RootViewController.mm as below*/
+
+    //EventCustom customEndEvent("game_scene_close_event");
+    //_eventDispatcher->dispatchEvent(&customEndEvent);
+
+
+}

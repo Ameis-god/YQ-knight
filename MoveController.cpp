@@ -1,13 +1,13 @@
 #include "MoveController.h"
 
-//ÓÃÓÚ´´½¨¿ØÖÆÆ÷µÄº¯Êı
+//ç”¨äºåˆ›å»ºæ§åˆ¶å™¨çš„å‡½æ•°
 MoveController* MoveController::createMoveController() {
     MoveController* moveController=MoveController::create() ;
     moveController->controllerInit();
     return moveController;
 }
 
-//³õÊ¼»¯¿ØÖÆÆ÷µÄº¯Êı
+//åˆå§‹åŒ–æ§åˆ¶å™¨çš„å‡½æ•°
 void MoveController::controllerInit() {
     listener = EventListenerKeyboard::create();
     listener->onKeyPressed = CC_CALLBACK_2(MoveController::onKeyPressed, this);
@@ -15,23 +15,23 @@ void MoveController::controllerInit() {
 }
 
 
-//»ñÈ¡Ë½ÓĞ±äÁ¿keysµÄº¯Êı
+//è·å–ç§æœ‰å˜é‡keysçš„å‡½æ•°
 std::map<cocos2d::EventKeyboard::KeyCode, bool> MoveController::getKeys() {
     return keys;
 }
 
-//»ñÈ¡Ë½ÓĞ±äÁ¿directionµÄº¯Êı
+//è·å–ç§æœ‰å˜é‡directionçš„å‡½æ•°
 int MoveController::getDirection() {
     return direction;
 }
 
-//¸Ä±äË½ÓĞ±äÁ¿directionµÄº¯Êı
+//æ”¹å˜ç§æœ‰å˜é‡directionçš„å‡½æ•°
 void MoveController::setDirection(int Direction) {
     direction = Direction;
 }
 
 
-//°´ÏÂ°´¼üË²¼äºÍ·Å¿ª°´¼üË²¼äµ÷ÓÃµÄº¯Êı£¬ÒÔºó¿ÉÒÔÔö¼ÓÉä»÷°´¼üµÈ
+//æŒ‰ä¸‹æŒ‰é”®ç¬é—´å’Œæ”¾å¼€æŒ‰é”®ç¬é—´è°ƒç”¨çš„å‡½æ•°ï¼Œä»¥åå¯ä»¥å¢åŠ å°„å‡»æŒ‰é”®ç­‰
 void MoveController::onKeyPressed(EventKeyboard::KeyCode keyCode, Event* event) {
     startRunningAnimation(keyCode);
     keys[keyCode] = true;
@@ -42,17 +42,17 @@ void MoveController::onKeyReleased(EventKeyboard::KeyCode keyCode, Event* event)
     keys[keyCode] = false;
 }
 
-//updateº¯Êı,ÓÉ×Ô´øµÄscheduleUpdateº¯Êıµ÷ÓÃ£¬Ã¿Ò»Ö¡µ÷ÓÃÒ»´Î
+//updateå‡½æ•°,ç”±è‡ªå¸¦çš„scheduleUpdateå‡½æ•°è°ƒç”¨ï¼Œæ¯ä¸€å¸§è°ƒç”¨ä¸€æ¬¡
 void MoveController::update(float dt) {
     const auto A = EventKeyboard::KeyCode::KEY_A;
     const auto D = EventKeyboard::KeyCode::KEY_D;
     const auto W = EventKeyboard::KeyCode::KEY_W;
     const auto S = EventKeyboard::KeyCode::KEY_S;
 
-    //ÕâÀïËÙ¶ÈÔİÊ±¹Ì¶¨£¬ºóÆÚ¿ÉÒÔ¸ÄÎªÓÉ²ÎÊıdt´«½øÀ´
+    //è¿™é‡Œé€Ÿåº¦æš‚æ—¶å›ºå®šï¼ŒåæœŸå¯ä»¥æ”¹ä¸ºç”±å‚æ•°dtä¼ è¿›æ¥
     const float speed = 2;
 
-    //WASDÖĞ°´ÏÂÒ»¸ö¼üµÄÇé¿ö
+    //WASDä¸­æŒ‰ä¸‹ä¸€ä¸ªé”®çš„æƒ…å†µ
     if (isKeyPressed(A) && !isKeyPressed(S) && !isKeyPressed(D) && !isKeyPressed(W)) {
         keyPressedDuration(A, speed);
     }
@@ -66,7 +66,7 @@ void MoveController::update(float dt) {
         keyPressedDuration(S, speed);
     }
 
-    //WAÖĞºÍSDÖĞ¸÷°´ÏÂÒ»¸ö¼üµÄÇé¿ö
+    //WSä¸­å’ŒADä¸­å„æŒ‰ä¸‹ä¸€ä¸ªé”®çš„æƒ…å†µ
     else if (isKeyPressed(A) && isKeyPressed(W) && !isKeyPressed(D) && !isKeyPressed(S)) {
         keyPressedDuration(A, W, speed);
     }
@@ -80,14 +80,14 @@ void MoveController::update(float dt) {
         keyPressedDuration(D, S, speed);
     }
 
-    //·ÀÖ¹×óÓÒÁ½¸ö¼üÍ¬Ê±°´ÏÂÊ±¶¯»­Ğ§¹ûÒì³£
+    //é˜²æ­¢å·¦å³ä¸¤ä¸ªé”®åŒæ—¶æŒ‰ä¸‹æ—¶åŠ¨ç”»æ•ˆæœå¼‚å¸¸
     else if (isKeyPressed(EventKeyboard::KeyCode::KEY_D) && isKeyPressed(EventKeyboard::KeyCode::KEY_A)) {
         stopRunningAnimation(EventKeyboard::KeyCode::KEY_D);
     }
 
 }
 
-//ÅĞ¶ÏÄ³¸ö¼üÊÇ·ñÕıÔÚ±»°´ÏÂµÄº¯Êı
+//åˆ¤æ–­æŸä¸ªé”®æ˜¯å¦æ­£åœ¨è¢«æŒ‰ä¸‹çš„å‡½æ•°
 bool MoveController::isKeyPressed(EventKeyboard::KeyCode keyCode) {
     if (getKeys()[keyCode]) {
         return true;
@@ -97,13 +97,13 @@ bool MoveController::isKeyPressed(EventKeyboard::KeyCode keyCode) {
     }
 }
 
-//WASD¼ü±»°´ÏÂ¹ı³ÌÖĞ»áµ÷ÓÃµÄº¯Êı£¬ÊµÏÖÓ¢ĞÛµÄÒÆ¶¯£¬Á½¸öÖØÔØº¯Êı·Ö±ğ¶ÔÓ¦°´ÏÂÒ»¸ö¼ü(ÉÏÏÂ×óÓÒÒÆ¶¯)ºÍ°´ÏÂÁ½¸ö¼ü(Ğ±45¶ÈÒÆ¶¯)
+//WASDé”®è¢«æŒ‰ä¸‹è¿‡ç¨‹ä¸­ä¼šè°ƒç”¨çš„å‡½æ•°ï¼Œå®ç°è‹±é›„çš„ç§»åŠ¨ï¼Œä¸¤ä¸ªé‡è½½å‡½æ•°åˆ†åˆ«å¯¹åº”æŒ‰ä¸‹ä¸€ä¸ªé”®(ä¸Šä¸‹å·¦å³ç§»åŠ¨)å’ŒæŒ‰ä¸‹ä¸¤ä¸ªé”®(æ–œ45åº¦ç§»åŠ¨)
 void MoveController::keyPressedDuration(EventKeyboard::KeyCode keyCode, float speed) {
 
-    //ÒÆ¶¯µÄ×ø±êÊı
+    //ç§»åŠ¨çš„åæ ‡æ•°
     float offsetX = 0, offsetY = 0;
 
-    //ÕâÀïÊµÏÖÁËÃ¿Ö¡ÅĞ¶ÏÇ½±Ú£¬ºóÆÚ¿ÉÒÔ½øĞĞĞŞ¸Ä£¬´Ó¶ø¸úµØÍ¼½áºÏ
+    //è¿™é‡Œå®ç°äº†æ¯å¸§åˆ¤æ–­å¢™å£ï¼ŒåæœŸå¯ä»¥è¿›è¡Œä¿®æ”¹ï¼Œä»è€Œè·Ÿåœ°å›¾ç»“åˆ
     switch (keyCode) {
     case EventKeyboard::KeyCode::KEY_A:
         offsetX = -speed;
@@ -134,7 +134,7 @@ void MoveController::keyPressedDuration(EventKeyboard::KeyCode keyCode, float sp
 void MoveController::keyPressedDuration(EventKeyboard::KeyCode keyCode1, EventKeyboard::KeyCode keyCode2, float speed) {
     float offsetX = 0, offsetY = 0;
     switch (keyCode1) {
-        //ÕâÀïÊµÏÖÁËÃ¿Ö¡ÅĞ¶ÏÇ½±Ú£¬ºóÆÚ¿ÉÒÔ½øĞĞĞŞ¸Ä£¬´Ó¶ø¸úµØÍ¼½áºÏ
+        //è¿™é‡Œå®ç°äº†æ¯å¸§åˆ¤æ–­å¢™å£ï¼ŒåæœŸå¯ä»¥è¿›è¡Œä¿®æ”¹ï¼Œä»è€Œè·Ÿåœ°å›¾ç»“åˆ
     case EventKeyboard::KeyCode::KEY_A:
         offsetX = -speed / sqrt(2);
         if (getChildByTag(1)->getPositionX() - getChildByTag(1)->getContentSize().width / 2 + offsetY <= 0)
@@ -162,7 +162,7 @@ void MoveController::keyPressedDuration(EventKeyboard::KeyCode keyCode1, EventKe
     getChildByTag(1)->runAction(moveBy);
 }
 
-//Æô¶¯Ó¢ĞÛÅÜ¶¯¶¯»­µÄº¯Êı£¬ÔÚ°´ÏÂWASD¼üµÄË²¼äµ÷ÓÃ
+//å¯åŠ¨è‹±é›„è·‘åŠ¨åŠ¨ç”»çš„å‡½æ•°ï¼Œåœ¨æŒ‰ä¸‹WASDé”®çš„ç¬é—´è°ƒç”¨
 void MoveController::startRunningAnimation(EventKeyboard::KeyCode keyCode) {
     Vector<SpriteFrame*> frameVec1;
     auto frame1 = SpriteFrame::create("Knight_right_standing.png", Rect(0, 0, 100, 100));
@@ -207,7 +207,7 @@ void MoveController::startRunningAnimation(EventKeyboard::KeyCode keyCode) {
 
 }
 
-//Í£Ö¹Ó¢ĞÛÅÜ¶¯¶¯»­µÄº¯Êı£¬ÔÚÊÍ·ÅWASD¼üµÄË²¼äµ÷ÓÃ
+//åœæ­¢è‹±é›„è·‘åŠ¨åŠ¨ç”»çš„å‡½æ•°ï¼Œåœ¨é‡Šæ”¾WASDé”®çš„ç¬é—´è°ƒç”¨
 void MoveController::stopRunningAnimation(EventKeyboard::KeyCode keyCode) {
     Vector<SpriteFrame*> frameVec1;
     auto frame1 = SpriteFrame::create("Knight_right_standing.png", Rect(0, 0, 100, 100));
